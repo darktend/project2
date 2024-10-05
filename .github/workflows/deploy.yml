@@ -68,7 +68,7 @@ jobs:
           docker tag prod_rds:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:$IMAGE_TAG
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:$IMAGE_TAG
 
-      - name: Update ECS service with new image (backend_rds)
+      - name: Update ECS service with new image (backend_redis)
         run: |
           LATEST_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:${{ github.sha }}
           
@@ -80,7 +80,12 @@ jobs:
           
           NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEFINITION" --query taskDefinition.taskDefinitionArn --output text --region ${{ secrets.AWS_REGION }})
           
-          aws ecs update-service --cluster ${{ secrets.prodECS_CLUSTER_NAME_PROD }} --service ${{ secrets.ECS_SERVICE_NAME_RDS_PROD }} --task-definition $NEW_TASK_DEF_ARN --region ${{ secrets.AWS_REGION }}
+          aws ecs update-service \
+            --cluster "${{ secrets.ECS_CLUSTER_NAME_PROD }}" \
+            --service "${{ secrets.ECS_SERVICE_NAME_REDIS_PROD }}" \
+            --task-definition "$NEW_TASK_DEF_ARN" \
+            --region ${{ secrets.AWS_REGION }}
+
 
   build_and_deploy_redis_master:
     runs-on: ubuntu-latest
@@ -108,7 +113,7 @@ jobs:
           docker tag prod_redis:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_redis:$IMAGE_TAG
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_redis:$IMAGE_TAG
 
-      - name: Update ECS service with new image (backend_redis)
+       - name: Update ECS service with new image (backend_rds)
         run: |
           LATEST_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_redis:${{ github.sha }}
           
@@ -120,7 +125,11 @@ jobs:
           
           NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEFINITION" --query taskDefinition.taskDefinitionArn --output text --region ${{ secrets.AWS_REGION }})
           
-          aws ecs update-service --cluster ${{ secrets.prodECS_CLUSTER_NAME_PROD }} --service ${{ secrets.ECS_SERVICE_NAME_REDIS_PROD }} --task-definition $NEW_TASK_DEF_ARN --region ${{ secrets.AWS_REGION }}
+          aws ecs update-service \
+            --cluster "${{ secrets.ECS_CLUSTER_NAME_PROD }}" \
+            --service "${{ secrets.ECS_SERVICE_NAME_REDIS_PROD }}" \
+            --task-definition "$NEW_TASK_DEF_ARN" \
+            --region ${{ secrets.AWS_REGION }}
 
   deploy_frontend_to_s3_master:
     runs-on: ubuntu-latest
