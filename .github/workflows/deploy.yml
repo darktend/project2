@@ -70,16 +70,19 @@ jobs:
 
       - name: Update ECS service with new image (backend_rds)
         run: |
+          # Get the latest image URI from ECR
+          LATEST_IMAGE_URI=$(aws ecr describe-images --repository-name prod_rds --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageUri' --output text --region ${{ secrets.AWS_REGION }})
+          
           TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition prod-task-rds --query "taskDefinition" --region ${{ secrets.AWS_REGION }})
 
           # Update the container image in the task definition
-          UPDATED_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE_URI "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:${{ github.sha }}" '
+          UPDATED_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE_URI "$LATEST_IMAGE_URI" '
           {
             family: .family,
-            taskRoleArn: (.taskRoleArn // empty),  # Виключаємо, якщо None
-            executionRoleArn: (.executionRoleArn // empty),  # Виключаємо, якщо None
+            taskRoleArn: (.taskRoleArn // empty),
+            executionRoleArn: (.executionRoleArn // empty),
             networkMode: .networkMode,
-            containerDefinitions: (.containerDefinitions | map(if .name == "backend_rds_container" then .image=$IMAGE_URI else . end)),
+            containerDefinitions: (.containerDefinitions | map(if .name == "prod-task-rds" then .image=$IMAGE_URI else . end)),
             volumes: .volumes,
             requiresCompatibilities: .requiresCompatibilities,
             cpu: .cpu,
@@ -120,16 +123,19 @@ jobs:
 
       - name: Update ECS service with new image (backend_redis)
         run: |
+          # Get the latest image URI from ECR
+          LATEST_IMAGE_URI=$(aws ecr describe-images --repository-name prod_redis --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageUri' --output text --region ${{ secrets.AWS_REGION }})
+          
           TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition prod-task-redis --query "taskDefinition" --region ${{ secrets.AWS_REGION }})
 
           # Update the container image in the task definition
-          UPDATED_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE_URI "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_redis:${{ github.sha }}" '
+          UPDATED_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE_URI "$LATEST_IMAGE_URI" '
           {
             family: .family,
-            taskRoleArn: (.taskRoleArn // empty),  # Виключаємо, якщо None
-            executionRoleArn: (.executionRoleArn // empty),  # Виключаємо, якщо None
+            taskRoleArn: (.taskRoleArn // empty),
+            executionRoleArn: (.executionRoleArn // empty),
             networkMode: .networkMode,
-            containerDefinitions: (.containerDefinitions | map(if .name == "backend_redis_container" then .image=$IMAGE_URI else . end)),
+            containerDefinitions: (.containerDefinitions | map(if .name == "prod-task-redis" then .image=$IMAGE_URI else . end)),
             volumes: .volumes,
             requiresCompatibilities: .requiresCompatibilities,
             cpu: .cpu,
