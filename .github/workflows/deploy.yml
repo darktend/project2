@@ -76,8 +76,8 @@ jobs:
           UPDATED_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE_URI "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:${{ github.sha }}" '
           {
             family: .family,
-            taskRoleArn: .taskRoleArn,
-            executionRoleArn: .executionRoleArn,
+            taskRoleArn: (.taskRoleArn // empty),  # Виключаємо, якщо None
+            executionRoleArn: (.executionRoleArn // empty),  # Виключаємо, якщо None
             networkMode: .networkMode,
             containerDefinitions: (.containerDefinitions | map(if .name == "backend_rds_container" then .image=$IMAGE_URI else . end)),
             volumes: .volumes,
@@ -126,8 +126,8 @@ jobs:
           UPDATED_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE_URI "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_redis:${{ github.sha }}" '
           {
             family: .family,
-            taskRoleArn: .taskRoleArn,
-            executionRoleArn: .executionRoleArn,
+            taskRoleArn: (.taskRoleArn // empty),  # Виключаємо, якщо None
+            executionRoleArn: (.executionRoleArn // empty),  # Виключаємо, якщо None
             networkMode: .networkMode,
             containerDefinitions: (.containerDefinitions | map(if .name == "backend_redis_container" then .image=$IMAGE_URI else . end)),
             volumes: .volumes,
