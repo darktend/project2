@@ -68,7 +68,7 @@ jobs:
           docker tag prod_rds:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:$IMAGE_TAG
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:$IMAGE_TAG
 
-      - name: Update ECS service with new image (backend_redis)
+      - name: Update ECS service with new image (backend_rds)
         run: |
           LATEST_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:${{ github.sha }}
           
@@ -82,7 +82,7 @@ jobs:
           
           aws ecs update-service \
             --cluster "${{ secrets.ECS_CLUSTER_NAME_PROD }}" \
-            --service "${{ secrets.ECS_SERVICE_NAME_REDIS_PROD }}" \
+            --service "${{ secrets.ECS_SERVICE_NAME_RDS_PROD }}" \
             --task-definition "$NEW_TASK_DEF_ARN" \
             --region ${{ secrets.AWS_REGION }}
 
