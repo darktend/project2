@@ -64,15 +64,15 @@ jobs:
       - name: Build and push Docker image for backend_rds
         run: |
           IMAGE_TAG=${{ github.sha }}
-          docker build -t prod_rds:$IMAGE_TAG ./backend_rds
-          docker tag prod_rds:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:$IMAGE_TAG
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:$IMAGE_TAG
+          docker build -t dev_rds:$IMAGE_TAG ./backend_rds
+          docker tag dev_rds:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dev_rds:$IMAGE_TAG
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dev_rds:$IMAGE_TAG
 
       - name: Update ECS service with new image (backend_rds)
         run: |
-          LATEST_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:${{ github.sha }}
+          LATEST_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dev_rds:${{ github.sha }}
           
-          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition prod-task-rds --query taskDefinition --region ${{ secrets.AWS_REGION }})
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition dev-task-rds --query taskDefinition --region ${{ secrets.AWS_REGION }})
 
           NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$LATEST_IMAGE_URI" '.containerDefinitions[0].image = $IMAGE')
           
@@ -81,8 +81,8 @@ jobs:
           NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEFINITION" --query taskDefinition.taskDefinitionArn --output text --region ${{ secrets.AWS_REGION }})
           
           aws ecs update-service \
-            --cluster "${{ secrets.ECS_CLUSTER_NAME_PROD }}" \
-            --service "${{ secrets.ECS_SERVICE_NAME_RDS_PROD }}" \
+            --cluster "${{ secrets.ECS_CLUSTER_NAME_DEV }}" \
+            --service "${{ secrets.ECS_SERVICE_NAME_RDS_DEV }}" \
             --task-definition "$NEW_TASK_DEF_ARN" \
             --region ${{ secrets.AWS_REGION }}
 
@@ -109,15 +109,15 @@ jobs:
       - name: Build and push Docker image for backend_redis
         run: |
           IMAGE_TAG=${{ github.sha }}
-          docker build -t prod_redis:$IMAGE_TAG ./backend_redis
-          docker tag prod_redis:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_redis:$IMAGE_TAG
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_redis:$IMAGE_TAG
+          docker build -t dev_redis:$IMAGE_TAG ./backend_redis
+          docker tag dev_redis:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dev_redis:$IMAGE_TAG
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dev_redis:$IMAGE_TAG
 
       - name: Update ECS service with new image (backend_rds)
         run: |
-          LATEST_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_redis:${{ github.sha }}
+          LATEST_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dev_redis:${{ github.sha }}
           
-          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition prod-task-redis --query taskDefinition --region ${{ secrets.AWS_REGION }})
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition dev-task-redis --query taskDefinition --region ${{ secrets.AWS_REGION }})
 
           NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$LATEST_IMAGE_URI" '.containerDefinitions[0].image = $IMAGE')
           
@@ -126,8 +126,8 @@ jobs:
           NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEFINITION" --query taskDefinition.taskDefinitionArn --output text --region ${{ secrets.AWS_REGION }})
           
           aws ecs update-service \
-            --cluster "${{ secrets.ECS_CLUSTER_NAME_PROD }}" \
-            --service "${{ secrets.ECS_SERVICE_NAME_REDIS_PROD }}" \
+            --cluster "${{ secrets.ECS_CLUSTER_NAME_DEV }}" \
+            --service "${{ secrets.ECS_SERVICE_NAME_REDIS_DEV }}" \
             --task-definition "$NEW_TASK_DEF_ARN" \
             --region ${{ secrets.AWS_REGION }}
 
@@ -149,8 +149,8 @@ jobs:
 
       - name: Remove old files from S3
         run: |
-          aws s3 rm s3://${{ secrets.S3_BUCKET_NAME_PROD }} --recursive
+          aws s3 rm s3://${{ secrets.S3_BUCKET_NAME_DEV }} --recursive
 
       - name: Upload new frontend files to S3
         run: |
-          aws s3 sync ./frontend s3://${{ secrets.S3_BUCKET_NAME_PROD }} --delete
+          aws s3 sync ./frontend s3://${{ secrets.S3_BUCKET_NAME_DEV }} --delete
