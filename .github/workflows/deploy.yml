@@ -70,7 +70,7 @@ jobs:
 
       - name: Update ECS service with new image (backend_rds)
         run: |
-          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition my-task-definition --query taskDefinition --region ${{ secrets.AWS_REGION }})
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition prod-task-rds --query taskDefinition --region ${{ secrets.AWS_REGION }})
 
           # Update the container image in the task definition
           UPDATED_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE_URI "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:${{ github.sha }}" '.containerDefinitions[0].image=$IMAGE_URI')
@@ -109,7 +109,7 @@ jobs:
 
       - name: Update ECS service with new image (backend_redis)
         run: |
-          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition my-task-definition --query taskDefinition --region ${{ secrets.AWS_REGION }})
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition prod-task-redis --query taskDefinition --region ${{ secrets.AWS_REGION }})
 
           # Update the container image in the task definition
           UPDATED_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE_URI "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_redis:${{ github.sha }}" '.containerDefinitions[0].image=$IMAGE_URI')
