@@ -70,29 +70,16 @@ jobs:
 
       - name: Update ECS service with new image (backend_rds)
         run: |
-          # Get the latest image URI from ECR
-          LATEST_IMAGE_URI=$(aws ecr describe-images --repository-name prod_rds --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageUri' --output text --region ${{ secrets.AWS_REGION }})
+          LATEST_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_rds:${{ github.sha }}
           
-          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition prod-task-rds --query "taskDefinition" --region ${{ secrets.AWS_REGION }})
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition prod-task-rds --query taskDefinition --region ${{ secrets.AWS_REGION }})
 
-          # Update the container image in the task definition
-          UPDATED_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE_URI "$LATEST_IMAGE_URI" '
-          {
-            family: .family,
-            taskRoleArn: (.taskRoleArn // empty),
-            executionRoleArn: (.executionRoleArn // empty),
-            networkMode: .networkMode,
-            containerDefinitions: (.containerDefinitions | map(if .name == "prod-task-rds" then .image=$IMAGE_URI else . end)),
-            volumes: .volumes,
-            requiresCompatibilities: .requiresCompatibilities,
-            cpu: .cpu,
-            memory: .memory
-          }')
-
-          # Register the new task definition
-          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json "$UPDATED_TASK_DEFINITION" --query "taskDefinition.taskDefinitionArn" --output text --region ${{ secrets.AWS_REGION }})
-
-          # Update the ECS service to use the new task definition
+          NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$LATEST_IMAGE_URI" '.containerDefinitions[0].image = $IMAGE')
+          
+          NEW_TASK_DEFINITION=$(echo $NEW_TASK_DEFINITION | jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+          
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEFINITION" --query taskDefinition.taskDefinitionArn --output text --region ${{ secrets.AWS_REGION }})
+          
           aws ecs update-service --cluster ${{ secrets.prodECS_CLUSTER_NAME_PROD }} --service ${{ secrets.ECS_SERVICE_NAME_RDS_PROD }} --task-definition $NEW_TASK_DEF_ARN --region ${{ secrets.AWS_REGION }}
 
   build_and_deploy_redis_master:
@@ -123,29 +110,16 @@ jobs:
 
       - name: Update ECS service with new image (backend_redis)
         run: |
-          # Get the latest image URI from ECR
-          LATEST_IMAGE_URI=$(aws ecr describe-images --repository-name prod_redis --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageUri' --output text --region ${{ secrets.AWS_REGION }})
+          LATEST_IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/prod_redis:${{ github.sha }}
           
-          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition prod-task-redis --query "taskDefinition" --region ${{ secrets.AWS_REGION }})
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition prod-task-redis --query taskDefinition --region ${{ secrets.AWS_REGION }})
 
-          # Update the container image in the task definition
-          UPDATED_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE_URI "$LATEST_IMAGE_URI" '
-          {
-            family: .family,
-            taskRoleArn: (.taskRoleArn // empty),
-            executionRoleArn: (.executionRoleArn // empty),
-            networkMode: .networkMode,
-            containerDefinitions: (.containerDefinitions | map(if .name == "prod-task-redis" then .image=$IMAGE_URI else . end)),
-            volumes: .volumes,
-            requiresCompatibilities: .requiresCompatibilities,
-            cpu: .cpu,
-            memory: .memory
-          }')
-
-          # Register the new task definition
-          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json "$UPDATED_TASK_DEFINITION" --query "taskDefinition.taskDefinitionArn" --output text --region ${{ secrets.AWS_REGION }})
-
-          # Update the ECS service to use the new task definition
+          NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$LATEST_IMAGE_URI" '.containerDefinitions[0].image = $IMAGE')
+          
+          NEW_TASK_DEFINITION=$(echo $NEW_TASK_DEFINITION | jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+          
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEFINITION" --query taskDefinition.taskDefinitionArn --output text --region ${{ secrets.AWS_REGION }})
+          
           aws ecs update-service --cluster ${{ secrets.prodECS_CLUSTER_NAME_PROD }} --service ${{ secrets.ECS_SERVICE_NAME_REDIS_PROD }} --task-definition $NEW_TASK_DEF_ARN --region ${{ secrets.AWS_REGION }}
 
   deploy_frontend_to_s3_master:
