@@ -17,30 +17,35 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Забезпечуємо повну історію комітів для порівняння
 
       - name: Check if backend_rds files have changed
         id: check_rds
-        uses: dorny/paths-filter@v2
-        with:
-          filters: |
-            backend_rds_changed:
-              - 'backend_rds/**'
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^backend_rds/'; then
+            echo "::set-output name=backend_rds_changed::true"
+          else
+            echo "::set-output name=backend_rds_changed::false"
+          fi
 
       - name: Check if backend_redis files have changed
         id: check_redis
-        uses: dorny/paths-filter@v2
-        with:
-          filters: |
-            backend_redis_changed:
-              - 'backend_redis/**'
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^backend_redis/'; then
+            echo "::set-output name=backend_redis_changed::true"
+          else
+            echo "::set-output name=backend_redis_changed::false"
+          fi
 
       - name: Check if frontend files have changed
         id: check_frontend
-        uses: dorny/paths-filter@v2
-        with:
-          filters: |
-            frontend_changed:
-              - 'frontend/**'
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^frontend/'; then
+            echo "::set-output name=frontend_changed::true"
+          else
+            echo "::set-output name=frontend_changed::false"
+          fi
 
   build_and_deploy_rds_master:
     runs-on: ubuntu-latest
