@@ -1,0 +1,107 @@
+= GitHub Actions Workflow: Deploy to AWS ECR and ECS
+
+This document describes the GitHub Actions workflow for deploying to AWS ECR and ECS when changes are pushed to the master or dev branches.
+
+== Workflow Trigger
+
+The workflow is triggered on pushes to the following branches:
+
+* `master`
+* `dev`
+
+== Jobs
+
+=== 1. Check Folder Changes
+
+This job checks which folders have changed in the commit.
+
+.Steps:
+. Checkout code
+. Check if backend_rds files have changed
+. Check if backend_redis files have changed
+. Check if frontend files have changed
+
+.Outputs:
+* `backend_rds_changed`
+* `backend_redis_changed`
+* `frontend_changed`
+
+=== 2. Build and Deploy RDS (Master Branch)
+
+This job builds and deploys the backend_rds service when changes are pushed to the master branch.
+
+.Conditions:
+* `backend_rds_changed == 'true'`
+* `github.ref == 'refs/heads/master'`
+
+.Steps:
+. Checkout code
+. Configure AWS credentials
+. Log in to Amazon ECR
+. Build and push Docker image for backend_rds
+. Update ECS service with new image (backend_rds)
+
+.Details:
+* Builds a Docker image tagged with the commit SHA
+* Pushes the image to Amazon ECR
+* Updates the ECS task definition with the new image
+* Updates the ECS service to use the new task definition
+
+=== 3. Build and Deploy Redis (Master Branch)
+
+This job builds and deploys the backend_redis service when changes are pushed to the master branch.
+
+.Conditions:
+* `backend_redis_changed == 'true'`
+* `github.ref == 'refs/heads/master'`
+
+.Steps:
+. Checkout code
+. Configure AWS credentials
+. Log in to Amazon ECR
+. Build and push Docker image for backend_redis
+. Update ECS service with new image (backend_redis)
+
+.Details:
+* Builds a Docker image tagged with the commit SHA
+* Pushes the image to Amazon ECR
+* Updates the ECS task definition with the new image
+* Updates the ECS service to use the new task definition
+
+=== 4. Deploy Frontend to S3 (Master Branch)
+
+This job deploys the frontend to S3 when changes are pushed to the master branch.
+
+.Conditions:
+* `frontend_changed == 'true'`
+* `github.ref == 'refs/heads/master'`
+
+.Steps:
+. Checkout code
+. Configure AWS credentials
+. Remove old files from S3
+. Upload new frontend files to S3
+
+.Details:
+* Removes all existing files from the S3 bucket
+* Uploads the new frontend files to the S3 bucket
+
+== Environment Variables and Secrets
+
+The workflow uses the following environment variables and secrets:
+
+* `AWS_ACCESS_KEY_ID`
+* `AWS_SECRET_ACCESS_KEY`
+* `AWS_REGION`
+* `AWS_REGION_S3`
+* `AWS_ACCOUNT_ID`
+* `ECS_CLUSTER_NAME_PROD`
+* `ECS_SERVICE_NAME_RDS_PROD`
+* `ECS_SERVICE_NAME_REDIS_PROD`
+* `S3_BUCKET_NAME_PROD`
+
+IMPORTANT: Ensure these secrets are properly set in your GitHub repository settings.
+
+== Conclusion
+
+This workflow automates the deployment process for both backend services (RDS and Redis) and the frontend. It ensures that only the necessary components are updated when changes are pushed to the master branch, improving efficiency and reducing the risk of unintended changes.
